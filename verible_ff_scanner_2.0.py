@@ -32,6 +32,7 @@ import anytree
 import verible_verilog_syntax
 from BleedBits_module import return_instance_list
 from BleedBits_module import return_register_list
+from BleedBits_module import returnInst
 
 """START BODY"""
 
@@ -217,11 +218,12 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
   print("\n",module_info["instance_list"],"\n")
   print("\nDEBUG register_list\n")
   print("\n",module_info["register_list"],"\n") """
-  
-  #for module in module_list:
-    #print("\n Name: ",module["module_name"],"\n")
-    #print("\n Instance list: ",module["instance_list"],"\n")
-    #print("\n Register list: ",module["register_list"],"\n")
+  #exit()
+  del module_list[0]
+  for module in module_list:
+    print("\n Name: ",module["module_name"],"\n")
+    print("\n Instance list: ",module["instance_list"],"\n")
+    print("\n Register list: ",module["register_list"],"\n")
 
   
 
@@ -233,12 +235,32 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
   #   look at the 
   #   example for top.A0.B0,...B1,...B2
   #   look for instances of top
-  #   for each of it (A0) will be the first
-  #     look for instances of type of A0 
-  #     look for instances of type of A0 
-  #     look for instances of type of A0 
-  #     return the list of dictionaries 
-  #     append the 
+  #   for each of it
+  #     A0  : 
+  #     look for instances of type of A0:
+  #       B0  : 
+  #       look for instances of B0
+  #       return a list of dictionaries
+  #       attach nothing
+  #       reuturn B0 dictionary
+  #       return to A0 the dictionary of B0
+  #       + list of dictionaries within B0 with B0 attached 
+
+  #       B1  : 
+  #       look for instances of B1
+  #       attach nothing
+  #       reuturn B0 dictionary
+
+  #       B2  : 
+  #       look for instances of B2 
+  #       attach nothing
+  #       reuturn B0 dictionary
+  #     return the A0 dictionary 
+  #     + list of dictionaries within B0 with B0 attached
+  #   return the list of dictionaries 
+  #   append the 'top' 
+  #   
+  #   function takes a type and return a list of dictionaries 
 
 
   top_module = [d for d in module_list if d["module_name"] == "JKFlipflop"] #this is list
@@ -246,6 +268,10 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
     print("This list is empty. Stopping the script")
     exit()
   top_module = top_module[0]
+  paths = [dict]
+  paths = returnInst(module_list,top_module["module_name"])
+  print("\n",paths,"\n")
+  exit()
   #for instance in top_module["instance_list"]:
   for instance in top_module["instance_list"]:  #loop through the instances (list of dictionaries)
     print("the instance name is: ",instance["instance_name"])

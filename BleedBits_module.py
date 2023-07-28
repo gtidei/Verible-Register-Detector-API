@@ -54,26 +54,25 @@ def return_instance_list(module):
     for instance in module.iter_find_all({"tag": "kInstantiationBase"}):
       # Create the dictionary to store instance name and type
       # i.e. 'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'
-      inst_info = {
-          "instance_name": "",
-          "instance_type": ""
-      }
-      instance_name = None
-      instance_type = None
+      
       # Loop through the modules and gates instances (are signals cut out)
       # i.e " D_FlipFlop dff(w, clk, reset, q)  "
       # filter according to the 'kGateInstance' tag
       for inst in instance.iter_find_all({"tag": "kGateInstance"}):
-        instance_name = inst.find({"tag": "SymbolIdentifier"})
-      if (instance_name != None):
-        # Get the submodule type name
-        for type in instance.iter_find_all({"tag": "kInstantiationType"}):
-          # Type
-          inst_info["instance_type"] = type.text
-          # Name
-          inst_info["instance_name"] = instance_name.text 
-          # Add to list
-          instance_list.append(inst_info)
+        inst_name = inst.find({"tag": "SymbolIdentifier"})
+        if (inst_name.text != ""):
+          # Get the submodule type name
+          for type in instance.iter_find_all({"tag": "kInstantiationType"}):
+            inst_info = {
+              "instance_type": type.text,
+              "instance_name": inst_name.text
+            }
+            # Type
+            #inst_info["instance_type"] = type.text
+            # Name
+            #inst_info["instance_name"] = instance_name.text 
+            # Add to list
+            instance_list.append(inst_info)
     return instance_list
 
 def return_register_list(module):
@@ -104,7 +103,8 @@ def return_register_list(module):
       "Reset_Value": 0,
       "Clock_Domain": "",
       #"Reset_Domain": "",
-      "Hier_Path": "JKFlipflop",
+      #"Hier_Path": "JKFlipflop",
+      "Hier_Path": "",
       "Driven_Event" : []
       }
       for timing_proc in always_proc.iter_find_all({"tag": "kProceduralTimingControlStatement"}):
@@ -172,8 +172,44 @@ def return_register_list(module):
         "Reset_Value": 0,
         "Clock_Domain": register_info["Clock_Domain"],
         #"Reset_Domain": "",
-        "Hier_Path": "FSM" + "." + element,
+        #"Hier_Path": "FSM" + "." + element,
+        "Hier_Path": "." + element,
         "Driven_Event" : register_info["Driven_Event"]
     }))
     return register_list
 
+def returnInst(module_list,module_type):
+    """
+    This function receives a module and returns the list of registers present in it. Submodule
+    registers are not included!
+
+    Args:
+        module_type (verible_verilog_syntax.BranchNode): Module from which registers are extracted.
+
+    Returns:
+        register_list (list): List of registers present in the module, SUBMODULE REGISTERS ARE NOT INCLUDED!.
+    """
+    
+    # Check for correct arguments
+    #if not isinstance(module, verible_verilog_syntax.BranchNode):
+        #raise ValueError("The first argument must be a verible_verilog_syntax.BranchNode.")
+    print(" input is module_type: ", module_type)
+    module_found = [d for d in module_list if d["module_name"] == module_type] #this is list
+    if not module_found:
+      return []
+    module_found = module_found[0]
+    absolute_path = [dict] #variable to return
+    #for instance in top_module["instance_list"]:
+    print(" module name ",module_found["module_name"])
+    print(" instance list ",module_found["instance_list"])
+    for instance in module_found["instance_list"]:  #loop through the instances (list of dictionaries)
+      # add the submodules of each instance
+      print("instance list is", instance)
+      inst_abs_path = returnInst(module_list,instance["instance_type"])
+      #for items in inst_abs_path:
+      #  items["instance_name"] = instance["instance_name"] + items["instance_name"]
+      absolute_path.append(inst_abs_path)
+      #add each instance
+      absolute_path.append(instance)
+
+    return absolute_path

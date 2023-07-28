@@ -193,37 +193,77 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
   # Collect information about each module declaration in the file
   for module in data.tree.iter_find_all({"tag": "kModuleDeclaration"}):
 
-    # Create the dictionary to attach to 'module_list'
-    # Name of the module
-    # i.e. 'module_name': 'JKFlipflop'
-    # List of instances within it
-    # i.e. 'instance_list': [<class 'dict'>, {'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'}, {'instance_name': 'dff2', 'instance_type': 'Async_Flipflop'}]
-    # List of registers within it
-    # i.e. 'register_list': [{'name': 'q', 'is_a_register': True, 'width': 32, 'Reset_Value': 0, 'Clock_Domain': '', 'Hier_Path': 'FSM.q', 'Driven_Event': ['clk', 'reset']}]
-    module_info = {
-      "module_name": "",  
-      "instance_list": [dict],
-      "register_list": []
-    } 
     # Extract module name
     header = module.find({"tag": "kModuleHeader"})
     module_name = header.find({"tag": ["SymbolIdentifier", "EscapedIdentifier"]}, iter_=anytree.PreOrderIter)
-    module_info["module_name"] = module_name.text
-    # Extract the list of instances (name and type) and import it into 'instance_list'
-    module_info["instance_list"] = return_instance_list(module)
-    # Extract the list of registers and import it into 'register_list'
-    module_info["register_list"] = return_register_list(module)
+
+    # Create the dictionary to attach to 'module_list'
+    module_info = {
+      # Name of the module
+      # i.e. 'module_name': 'JKFlipflop'
+      "module_name": module_name.text,  
+      # List of instances within it
+      # i.e. 'instance_list': [<class 'dict'>, {'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'}, {'instance_name': 'dff2', 'instance_type': 'Async_Flipflop'}]
+      "instance_list": return_instance_list(module),
+      # List of registers within it
+      # i.e. 'register_list': [{'name': 'q', 'is_a_register': True, 'width': 32, 'Reset_Value': 0, 'Clock_Domain': '', 'Hier_Path': 'FSM.q', 'Driven_Event': ['clk', 'reset']}]
+      "register_list": return_register_list(module)
+    } 
     module_list.append(module_info)
 
   """     print("\nDEBUG module_name\n")
   print("\n",module_info["module_name"],"\n")
-  print("\nDEBUG instance_list\n")
+  print("\nDEBUG instance_list\n")s
   print("\n",module_info["instance_list"],"\n")
   print("\nDEBUG register_list\n")
   print("\n",module_info["register_list"],"\n") """
   
-  for module in module_list:
-    print("\n",module,"\n")
+  #for module in module_list:
+    #print("\n Name: ",module["module_name"],"\n")
+    #print("\n Instance list: ",module["instance_list"],"\n")
+    #print("\n Register list: ",module["register_list"],"\n")
+
+  
+
+  ### From here on code under development
+  # example of tunction we want
+  # def rI(path:list, paths.out:list)->list:
+  #   get the instance name
+  #   get the instance type
+  #   look at the 
+  #   example for top.A0.B0,...B1,...B2
+  #   look for instances of top
+  #   for each of it (A0) will be the first
+  #     look for instances of type of A0 
+  #     look for instances of type of A0 
+  #     look for instances of type of A0 
+  #     return the list of dictionaries 
+  #     append the 
+
+
+  top_module = [d for d in module_list if d["module_name"] == "JKFlipflop"] #this is list
+  if not top_module:
+    print("This list is empty. Stopping the script")
+    exit()
+  top_module = top_module[0]
+  #for instance in top_module["instance_list"]:
+  for instance in top_module["instance_list"]:  #loop through the instances (list of dictionaries)
+    print("the instance name is: ",instance["instance_name"])
+    print("the instance type is: ",instance["instance_type"])
+    mod = [inst for inst in module_list if inst["module_name"] == instance["instance_type"]]
+    if not mod:
+      continue    
+    mod = mod[0]   
+    print(" mod is :", mod)
+    #print("register mod is: ",mod["register_list"])
+    for register in mod["register_list"]:
+       temp_reg = register
+       temp_reg[""]
+
+      #print("hier path is ", register["Hier_Path"])
+  
+    #mod = mod[0]
+    #print("we found module ",mod["module_name"], "\n",mod["register_list"])
 
 """ 
     MAIN Function:

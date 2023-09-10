@@ -1,14 +1,5 @@
 `timescale 1ns/1ns
 
-module JKFlipflop(input logic [31:0] J, input logic [31:0] K,
-                  input logic clk, input logic reset, output logic [31:0] q);
-  logic [31:0] w;
-  assign w=(J&~q)|(~K&q);
-  Async_Flipflop dff1(w,clk,reset,q);
-  Async_Flipflop dff2(w,clk,reset,q);
-  Sync_Flipflop dff3(w,clk,reset,q);
-endmodule
-
 module Async_Flipflop(input logic [31:0] Din, input logic clk,
                       input logic reset, output logic [31:0] q);
     always_ff@(posedge clk or posedge reset) begin
@@ -29,9 +20,32 @@ module Sync_Flipflop(input logic [31:0] Din, input logic clk,
     end
 endmodule
 
-module AnotherModule(input logic [31:0] J, input logic [31:0] K,
+module JKFlipflop(input logic [31:0] J, input logic [31:0] K,
+                  input logic clk, input logic reset, output logic [31:0] q);
+  logic [31:0] w;
+  assign w=(J&~q)|(~K&q);
+  Async_Flipflop async_ff1(w,clk,reset,q);
+  Async_Flipflop async_ff2(w,clk,reset,q);
+  Sync_Flipflop sync_ff1(w,clk,reset,q);
+endmodule
+
+/*  
+//  TODO: make it as a generate
+module JKFlipflop(input logic [31:0] J, input logic [31:0] K,
+                  input logic clk, input logic reset, output logic [31:0] q);
+  logic [31:0] w;
+  assign w=(J&~q)|(~K&q);
+  Async_Flipflop dff1(w,clk,reset,q);
+  Async_Flipflop dff2(w,clk,reset,q);
+  Sync_Flipflop dff3(w,clk,reset,q);
+endmodule 
+*/
+
+module Top_module(input logic [31:0] J, input logic [31:0] K,
                      input logic clk, input logic reset, output logic [31:0] q);
-    JKFlipflop jk_flipflop(J, K, clk, reset, q);
+    JKFlipflop jk_flipflop_1(J, K, clk, reset, q);
+    JKFlipflop jk_flipflop_2(J, K, clk, reset, q);
+    FSM fsm1(clk, reset, J, q);
 endmodule
 
 module FSM(

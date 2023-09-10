@@ -241,7 +241,7 @@ def main():
 
   for file_path, file_data in data.items():
     #process_file_data(file_path, file_data)
-    process_registers(file_path, file_data)
+    process_registers(file_path, file_data) 
 
 if __name__ == "__main__":
   sys.exit(main())

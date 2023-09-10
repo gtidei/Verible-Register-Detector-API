@@ -50,7 +50,7 @@ def return_instance_list(module):
     # Loop through all the instances, this includes modules and signals
     # i.e. "  logic [31:0] w  "
     # i.e " D_FlipFlop dff(w, clk, reset, q)  "
-    instance_list = [dict]
+    instance_list = []
     for instance in module.iter_find_all({"tag": "kInstantiationBase"}):
       # Create the dictionary to store instance name and type
       # i.e. 'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'
@@ -178,10 +178,12 @@ def return_register_list(module):
     }))
     return register_list
 
-def returnInst(module_list,module_type):
+def returnInst_backup(module_list,module_type):
     """
-    This function receives a module and returns the list of registers present in it. Submodule
-    registers are not included!
+    This function receives a module and returns the hierarchical path of each submodule 
+    along with the submodule type itself
+    i.e. {'instance_name': 'jk_flipflop_1.async_ff1', 'instance_type': 'Async_Flipflop'},
+      {'instance_name': 'jk_flipflop_1.async_ff2', 'instance_type': 'Async_Flipflop'}
 
     Args:
         module_type (verible_verilog_syntax.BranchNode): Module from which registers are extracted.
@@ -198,18 +200,74 @@ def returnInst(module_list,module_type):
     if not module_found:
       return []
     module_found = module_found[0]
-    absolute_path = [dict] #variable to return
+    absolute_path = [] # variable to return
+    new_absolute_path = []
     #for instance in top_module["instance_list"]:
     print(" module name ",module_found["module_name"])
     print(" instance list ",module_found["instance_list"])
     for instance in module_found["instance_list"]:  #loop through the instances (list of dictionaries)
       # add the submodules of each instance
-      print("instance list is", instance)
+      print("instance is", instance)
       inst_abs_path = returnInst(module_list,instance["instance_type"])
+      print("inst_abs_path is", inst_abs_path)
       #for items in inst_abs_path:
       #  items["instance_name"] = instance["instance_name"] + items["instance_name"]
-      absolute_path.append(inst_abs_path)
-      #add each instance
-      absolute_path.append(instance)
-
+      for item in inst_abs_path:
+        absolute_path.append(instance["instance_name"]+'.'+item)
+      absolute_path.append(instance["instance_name"])
     return absolute_path
+
+def returnInst(module_list,module_type):
+  """
+  This function receives a module and returns the hierarchical path of each submodule 
+  along with the type itself
+
+  Args:
+
+    module_type (verible_verilog_syntax.BranchNode): Module from which registers are extracted.
+
+    module_list : List of dictionaries with the following entires
+    "module_name": Name of the module 
+    i.e. 'module_name': 'JKFlipflop'
+    "instance_list" : List of instances within it
+    i.e. 'instance_list': [{'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'}, {'instance_name': 'dff2', 'instance_type': 'Async_Flipflop'}]
+    "register_list" : List of registers within it
+    i.e. 'register_list': [{'name': 'q', 'is_a_register': True, 'width': 32, 'Reset_Value': 0, 'Clock_Domain': '', 'Hier_Path': 'FSM.q', 'Driven_Event': ['clk', 'reset']}]
+
+  Returns:
+
+    List of hierarchical paths of each submodule along with the the type itself
+    i.e. {'instance_name': 'jk_flipflop_1.async_ff1', 'instance_type': 'Async_Flipflop'},
+    {'instance_name': 'jk_flipflop_1.async_ff2', 'instance_type': 'Async_Flipflop'}
+     
+  """
+
+  # Check for correct arguments
+  #if not isinstance(module, verible_verilog_syntax.BranchNode):
+      #raise ValueError("The first argument must be a verible_verilog_syntax.BranchNode.")
+  print("'returnInst' function, Input is module_type: ", module_type)
+  # Look for the module_name in the module_list
+  module_found = [d for d in module_list if d["module_name"] == module_type] # "module_found" is a list
+  if not module_found: # if no module is found return an empty list
+    return []
+  module_found = module_found[0] # select the first item of the list
+  absolute_path = [] # list to return
+  print("'returnInst' function, module_name: ",module_found["module_name"])
+  print("'returnInst' function, instance_list: ",module_found["instance_list"])
+  for instance in module_found["instance_list"]:  # loop through all the instances of this module (list of dictionaries)
+    # call recursively the 'returnInst' function itself
+    inst_abs_path = returnInst(module_list,instance["instance_type"])
+    # loop through the paths returned and add the instance prefix to the paths returned
+    for item in inst_abs_path:
+      inst_info = {
+              "instance_name": instance["instance_name"]+'.'+item["instance_name"] ,
+              "instance_type": item["instance_type"]
+            }
+      absolute_path.append(inst_info)
+    # add the path of the instance itself
+    inst_info = {
+        "instance_name": instance["instance_name"],
+        "instance_type": instance["instance_type"]
+      }
+    absolute_path.append(inst_info)
+  return absolute_path

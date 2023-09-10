@@ -30,6 +30,7 @@
 import sys
 import anytree
 import verible_verilog_syntax
+import copy
 from BleedBits_module import return_instance_list
 from BleedBits_module import return_register_list
 from BleedBits_module import returnInst
@@ -191,7 +192,9 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
   for module in data.tree.iter_find_all({"tag": "kHierarchySegment"}):
      print("DEUG: ",module)
 
-  # Collect information about each module declaration in the file
+  #######################################
+  # Collect information about each module 
+  #######################################
   for module in data.tree.iter_find_all({"tag": "kModuleDeclaration"}):
 
     # Extract module name
@@ -204,92 +207,74 @@ def process_registers(path: str, data: verible_verilog_syntax.SyntaxData):
       # i.e. 'module_name': 'JKFlipflop'
       "module_name": module_name.text,  
       # List of instances within it
-      # i.e. 'instance_list': [<class 'dict'>, {'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'}, {'instance_name': 'dff2', 'instance_type': 'Async_Flipflop'}]
+      # i.e. 'instance_list': [{'instance_name': 'dff1', 'instance_type': 'Async_Flipflop'}, {'instance_name': 'dff2', 'instance_type': 'Async_Flipflop'}]
       "instance_list": return_instance_list(module),
       # List of registers within it
       # i.e. 'register_list': [{'name': 'q', 'is_a_register': True, 'width': 32, 'Reset_Value': 0, 'Clock_Domain': '', 'Hier_Path': 'FSM.q', 'Driven_Event': ['clk', 'reset']}]
       "register_list": return_register_list(module)
     } 
     module_list.append(module_info)
+  del module_list[0] # remove some garbage
 
-  """     print("\nDEBUG module_name\n")
-  print("\n",module_info["module_name"],"\n")
-  print("\nDEBUG instance_list\n")s
-  print("\n",module_info["instance_list"],"\n")
-  print("\nDEBUG register_list\n")
-  print("\n",module_info["register_list"],"\n") """
-  #exit()
-  del module_list[0]
+  # Print "module_list" entries
+  print("\nInformation about each module: \n")
   for module in module_list:
-    print("\n Name: ",module["module_name"],"\n")
-    print("\n Instance list: ",module["instance_list"],"\n")
-    print("\n Register list: ",module["register_list"],"\n")
-
+    print("module_name: ",module["module_name"])
+    print("instance_list: ",module["instance_list"])
+    print("register_list: ",module["register_list"])
   
-
-  ### From here on code under development
-  # example of tunction we want
-  # def rI(path:list, paths.out:list)->list:
-  #   get the instance name
-  #   get the instance type
-  #   look at the 
-  #   example for top.A0.B0,...B1,...B2
-  #   look for instances of top
-  #   for each of it
-  #     A0  : 
-  #     look for instances of type of A0:
-  #       B0  : 
-  #       look for instances of B0
-  #       return a list of dictionaries
-  #       attach nothing
-  #       reuturn B0 dictionary
-  #       return to A0 the dictionary of B0
-  #       + list of dictionaries within B0 with B0 attached 
-
-  #       B1  : 
-  #       look for instances of B1
-  #       attach nothing
-  #       reuturn B0 dictionary
-
-  #       B2  : 
-  #       look for instances of B2 
-  #       attach nothing
-  #       reuturn B0 dictionary
-  #     return the A0 dictionary 
-  #     + list of dictionaries within B0 with B0 attached
-  #   return the list of dictionaries 
-  #   append the 'top' 
-  #   
-  #   function takes a type and return a list of dictionaries 
-
-
-  top_module = [d for d in module_list if d["module_name"] == "JKFlipflop"] #this is list
+  ################################
+  # Generate the modules hierarchy
+  ################################
+  # i.e. path : jk_flipflop_2.sync_ff1
+  #      module_name : Sync_Flipflop
+  #      path : jk_flipflop_2
+  #      module_name : JKFlipflop
+  #      path : fsm1
+  #      module_name : FSM
+  # Top module must be specified explicitly
+  top_module = [d for d in module_list if d["module_name"] == "Top_module"] # "top_module" is a list
   if not top_module:
     print("This list is empty. Stopping the script")
     exit()
-  top_module = top_module[0]
-  paths = [dict]
-  paths = returnInst(module_list,top_module["module_name"])
-  print("\n",paths,"\n")
-  exit()
-  #for instance in top_module["instance_list"]:
-  for instance in top_module["instance_list"]:  #loop through the instances (list of dictionaries)
-    print("the instance name is: ",instance["instance_name"])
-    print("the instance type is: ",instance["instance_type"])
-    mod = [inst for inst in module_list if inst["module_name"] == instance["instance_type"]]
-    if not mod:
-      continue    
-    mod = mod[0]   
-    print(" mod is :", mod)
-    #print("register mod is: ",mod["register_list"])
-    for register in mod["register_list"]:
-       temp_reg = register
-       temp_reg[""]
+  top_module = top_module[0]  # select just the first item of the list
+  hierarchy = []  # hierarchy container
+  print("\n")
+  hierarchy = returnInst(module_list,top_module["module_name"])
+  print("\nHierarchy generated: \n")
+  # print the hierarchy entires
+  for path in hierarchy:
+    print("path :",path["instance_name"])
+    print("module_name :",path["instance_type"])
 
-      #print("hier path is ", register["Hier_Path"])
-  
-    #mod = mod[0]
-    #print("we found module ",mod["module_name"], "\n",mod["register_list"])
+  ##################################
+  # Generate the registers hierarchy
+  ##################################
+  # i.e ...'Hier_Path': 'jk_flipflop_1.async_ff1.q', 'Driven_Event': ['clk', 'reset']}
+  #     ...'Hier_Path': 'jk_flipflop_1.async_ff2.q', 'Driven_Event': ['clk', 'reset']}
+  #     ...'Hier_Path': 'jk_flipflop_1.sync_ff1.q', 'Driven_Event': ['clk']}
+  signals_hierarchy = []
+  for path in hierarchy: # loop through each instance
+      print("\n")
+      print("path: ",path["instance_name"])
+      # Look for the module type in the module_list
+      module_found = [d for d in module_list if d["module_name"] == path["instance_type"]] # "module_found" is a list
+      if not module_found: # if nothing is returned and the list is empty
+        return []
+      module_found = module_found[0] # select the first item of the list
+      print("module_name: ",module_found["module_name"])
+      # check if the module has an empty register list (doesn't contain any signal, maybe it contains just instances)
+      if not module_found["register_list"]: 
+        print("Register list is empty")
+        continue # break this iteration
+      for item in module_found["register_list"]:  # iterate through the registers
+        register = copy.deepcopy(item)
+        register["Hier_Path"] = path["instance_name"] + register["Hier_Path"] # attach the instance hierarchy 
+        print("register : ",register)
+        signals_hierarchy.append(register)
+  print("\n")
+  for item in signals_hierarchy:
+    print("register: ",item)
 
 """ 
     MAIN Function:
